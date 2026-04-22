@@ -15,6 +15,7 @@ public class RoomResource {
 
     private final DataStore store = DataStore.getInstance();
 
+    // Part 2.1: GET /api/v1/rooms - List all rooms [cite: 114]
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Response getAllRooms() {
@@ -22,6 +23,7 @@ public class RoomResource {
         return Response.ok(rooms).build();
     }
 
+    // Part 2.1: POST /api/v1/rooms - Create a new room [cite: 115]
     @POST
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -40,6 +42,7 @@ public class RoomResource {
         return Response.status(201).entity(room).build();
     }
 
+    // Part 2.1: GET /api/v1/rooms/{roomId} - Fetch specific room metadata [cite: 116]
     @GET
     @Path("/{roomId}")
     @Produces(MediaType.APPLICATION_JSON)
@@ -53,22 +56,39 @@ public class RoomResource {
         return Response.ok(room).build();
     }
 
+    // Part 2.2: DELETE /api/v1/rooms/{roomId} - Room decommissioning 
     @DELETE
     @Path("/{roomId}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response deleteRoom(@PathParam("roomId") String roomId) {
         Room room = store.getRooms().get(roomId);
+        
         if (room == null) {
             return Response.status(404)
                     .entity(Map.of("error", "Room not found: " + roomId))
                     .build();
         }
+
+        // Business Logic Constraint: Block deletion if room has sensors [cite: 121, 150]
         if (!room.getSensorIds().isEmpty()) {
             throw new RoomNotEmptyException(
                     "Room " + roomId + " has active sensors and cannot be deleted."
             );
         }
+        
         store.getRooms().remove(roomId);
         return Response.ok(Map.of("message", "Room deleted successfully")).build();
+    }
+
+    /**
+     * Part 5.4: Test Endpoint for Global Safety Net (500 Error) [cite: 160, 161]
+     * This endpoint intentionally throws an exception to prove your 
+     * GlobalExceptionMapper intercepts unexpected errors.
+     */
+    @GET
+    @Path("/debug/trigger-error")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response triggerInternalError() {
+        throw new RuntimeException("Simulated unexpected server failure");
     }
 }
